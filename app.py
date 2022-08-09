@@ -1,3 +1,4 @@
+from asyncio.windows_events import NULL
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -18,6 +19,7 @@ ma = Marshmallow(app)
 def token_required(func):
     @wraps(func)
     def decorated(*args, **kwargs):
+        token = NULL
         if 'x-access-token' in request.headers:
             token = request.headers['x-access-token']
         if not token:
@@ -58,9 +60,9 @@ users_schema = UserSchema(many=True)
 # ROUTER
 #POST NEW USER
 @app.route('/newuser', methods=['POST'])
-def post():
-    username = request.json['username']
-    email = request.json['email']
+def new_user():
+    username = request.json['username'].lower()
+    email = request.json['email'].lower()
     password = request.json['password']
     password = hashlib.md5(password.encode()).hexdigest()
     newUser = User(username, email, password)
@@ -68,7 +70,7 @@ def post():
     db.session.add(newUser)
     db.session.commit()
 
-    return user_schema.dump(newUser)
+    return jsonify(user_schema.dump(newUser))
 
 
 #POST LOGIN
@@ -111,7 +113,7 @@ def all():
 @app.route('/loged', methods=['GET'])
 @token_required
 def portected(username):
-    return jsonify({f'msg': 'Welcome {username}'})
+    return jsonify({'user': f'Welcome {username}'})
 
 
 #GET ONE USER
